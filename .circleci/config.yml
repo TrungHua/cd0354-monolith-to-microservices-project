@@ -1,0 +1,52 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@5.1.0
+
+executors:
+  docker-publisher:
+    environment:
+      API_FEED: huatientrung11/udagram-api-feed
+      API_USER: huatientrung11/udagram-api-user
+      FRONTEND: huatientrung11/udagram-frontend
+      REVERSEPROXY: huatientrung11/reverseproxy
+    docker:
+      - image: 'docker:stable'
+
+jobs:
+  build:
+    working_directory: /cd0354-monolith-to-microservices-project
+    executor: docker-publisher
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Install dependencies
+          command: |
+            echo "Install dependencies"
+      - run:
+          name: Build images
+          command: |
+            docker --version
+
+            docker build -t udagram-api-feed ./udagram-api-feed
+            docker tag udagram-api-feed $API_FEED
+
+            docker build -t udagram-api-user ./udagram-api-user
+            docker tag udagram-api-user $API_USER
+
+            docker build -t udagram-frontend ./udagram-frontend
+            docker tag udagram-frontend $FRONTEND
+
+            docker build -t udagram-reverseproxy ./udagram-reverseproxy
+            docker tag udagram-reverseproxy $REVERSEPROXY
+
+            echo "All done"
+      - deploy:
+          name: Deploy to DockerHub
+          command: |
+            docker login -u $DOCKER_USER_ID -p $DOCKER_PASSWORD
+            docker push $API_FEED:latest
+            docker push $API_USER:latest
+            docker push $FRONTEND:latest
+            docker push $REVERSEPROXY:latest
